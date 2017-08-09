@@ -1,0 +1,12 @@
+Author: Bhishan Poudel
+Date: July 28, 2017
+
+To login to another github account from same computer
+======================================================
+
+1. Repo: https://github.com/bpresearch/a1_data.git
+
+2. insert bpresearch@
+git clone https://github.com/bpresearch/a1_data.git
+cd a1_data
+git remote set-url origin https://bpresearch@github.com/bpresearch/a1_data.git
