@@ -1,0 +1,179 @@
+may5 = '''
+************************************************************************
+# ======================================================================
+# Date   : May 05, 2017
+# Summary: Create bulge_f8 and disk_f8 folders from galfit fitting.
+# Updated: Jun 26, 2017
+# ======================================================================
+
+Step 1: Preprocess original galaxies
+        ============================
+    The original downloaded galaxy stamps are obtained from collborator at Brown University:
+    http://www.het.brown.edu/people/ian/Doug/stamps
+    
+    old_stamps.gz has 101 old stamps from sect23.
+    
+    To download fits file from website I used wget command.
+    `wget -r l1 -nd --no-clobber -A.fits http://www.het.brown.edu/people/ian/Doug/stamps/ `
+    
+    The downloaded folders are: stamps_old_0_200, stamps_new_0_200.
+    
+    Stmaps_old has 101 stamps (0-100) for f125w, f606w, and f814w filters.
+    Stamps_new has 201 stamps (0-200) for f125w, f606w, and f814w filters.
+    
+    Here, we are using only f814w filter galaxies.
+    
+    There is some problems with these f814w stamps. 
+    One of them has bad tabbed header and all 302 galaxy stamps has BYTEORDR problem.
+    
+    First we will fix these two errors and created a folder stamps_f8 with corrected 302 files.
+    
+Setp 2. Create bulge_f8 and disk_f8 from galfit two component fittings
+        ===============================================================
+        The galfit expdisk_devauc fitting gives two component fittings devauc
+        and expdisk_res for f814w filter galaxies.
+        
+        Not all of these fittings are plausible, I checked the bad fitted 
+        galaxies using logfile and also observing the galaxies using ds9.
+        
+        We copy these two folders to the working directory.
+        Then we delete the badly fitted galaxies from devauc and expdisk_res.
+        
+        Ideally we should have 302 bulge and 302 disk components, but not all
+        the galaxies have two components and also there is some limitation
+        in galfit fitting.
+        
+        So, we have to choose missing fitting files. For bulge we take the 
+        original galaxies as the missing fitting files and for disk we take
+        that as the null fitsfile.
+        
+        The galfit fitting files do not have four headers MAG, RADIUS, MAG0,
+        PIXSCALE which are required by jedicatalog and also there is some work
+        needs to be done for the appropriate names.
+        
+        In the end we will multiply all the bulge and disk components by
+        mask.fits so that there is no negative pixels in the fitsfiles.
+        
+    
+       The complete procedure is given below:
+    
+    
+a1. Combine old and new galaxies into stamps_f8
+    =====================================================
+        **create_stamps_f8.py**. 
+        (This will also move bad tabbed header fitsfile f814w_gal202.fits into
+             a new folder stamps_bad.)
+        
+    
+a2. Fix bad tabbed headers fitsfile.
+    =================================
+        Only one fitsfile stamps_bad/f814w_gal202.fits has bad tabbed header.
+        To correct it use: 
+            **fix_bad_tabbed_headers.py**, 
+        which will move the corrected file back into the stamps_f8 folder.
+    
+a3. Fix bad BYTEORDR problem.
+    ==========================
+         All 302 original galaxies have this problem.
+         To fix bad byteordr problem we use:
+             **fix_bad_byteordr.py**
+        
+    The corrected 302 galaxeis are in stamps_f8.
+
+a4. Create masks to multiply with devauc and expdisk_res
+    =====================================================
+    
+    After preprocessing errors in original galaxies, we create masks for 
+    these 302 galaxies using **create_mask_for_gals.py**.
+    
+    The masks are created inside the folder *masks*.
+
+b1.  Copy devauc and expdisk_res fitting and delete bad fitted files
+    ===============================================================
+    From Research/galfit_usage/expdisk_devauc/galfit_outputs_f8 
+    copy two componet fitting folders devauc and expdis_res.
+    
+    Looking the logfile of galfit and also visually observe the fitted galaxies,
+    I fond that some the fitting are not not satisfacotry. So we have tho delete 
+    these files.
+    
+    (For more information look into the folder Research/galfit_usage/verify_2cmp_fitting.)
+    
+    To delete the badly fitted galaxies use the code 
+    **delete_bad_fitted_files.py**.
+
+b2.  Create bulge_f8_missing_headers and disk_f8_missing_headers
+    ============================================================
+
+    For bulge, we duplicate the folder stamps_f8 to bulge_f8_missing_headers.
+    For disk, we create 302 null fitsfiles which already have four headers.
+    
+    The code to create these folders is:
+    **create_bd_missing_headers.py**.
+    
+    Note that all 302 files in both folders have four headers but when we
+    replace these base files by fitting files from devauc or expdisk_res
+    folders, the copied files will not have the four headers.
+
+b3.  Rename devauc, expdisk_res, and bulge_f8_missing_headers fitsfiles
+    (disk_f8_missing_headers already have appropriate names.)
+    =========================================================================
+
+    Rename the fitsfiles in the folders apropriately using
+    **rename_files.py**.
+
+
+    From  : devauc/f814w_devauc0.fits
+    To    : devauc/f814w_bulge0.fits
+    
+    
+    From  : expdisk_res/f814w_expdisk_res0.fits
+    To    : expdisk_res/f814w_disk0.fits
+    
+    
+    From  : bulge_f8_missing_headers/f814w_devauc0.fits
+    To    : bulge_f8_missing_headers/f814w_bulge0.fits
+    
+    1. We don't have to rename disk_f8_missing_headers.
+    
+    2. The files in disk_f8_missing_headers have four headers
+       but when we copy files from expdisk_res the copied files will not
+       have the headers.
+    
+
+b4.  Replace files of bulge_f8_missing_headers from devauc
+    and,             disk_f8_missing_headers  from expdisk_res
+    ======================================================
+
+    Copy and replace all the 188 files 
+    From: devauc 
+    To  : bulge_f8_missing_headers
+    
+    From: expdisk_res
+    To  : disk_f8_missing_headers
+   
+    **replace_files.py**.
+    
+b5.  Add headers to the files copied from devauc into bulge_f8_missing_headers
+    and, from expdisk_res to  disk_f8_missing_headers
+    ========================================================================= 
+    
+    The files copied from stamps_f8 to bulge_f8_missing_headers
+    have required four headers.
+
+    However, the 188 files copied from devauc to bulge_f8_missing_headers
+    do not have the headers MAG MAG0 RADIUS PIXSCALE
+    and these keywords are required by jedicatalog.
+
+    So, we will add the four headers to all 302 files 
+    (including 302-188= 114 that already have them) using 
+    **add_headers.py**.    
+
+b6. Multiply by the mask
+    ===================
+    Now the folder bulge_f8_unmasked has 302 unmasked f814w files, and
+    the folder disk_f8_unmasked has also 302 unmasked f814w files.
+    
+    We multiply these files with the mask and write into bulge_f8 and disk_f8
+    using 
+    **multiply_by_mask.py**.
